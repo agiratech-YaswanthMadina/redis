@@ -11,8 +11,11 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "cookie-parser": "^1.4.6",
     "express": "^4.19.2",
-    "mongoose": "^8.3.4",
-    "nodemon": "^3.1.0"
+    "mongoose": "^5.13.22",
+    "nodemon": "^3.1.0",
+    "regex-escape": "^3.4.10",
+    "validatorjs": "^3.22.1"
   }
 }

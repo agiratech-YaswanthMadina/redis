@@ -1,72 +1,233 @@
-const express = require('express')
-const router = express.Router()
-const Employee = require('../models/employee')
+const { Employee } = require("../models/employeeType");
+const CrudRouter = require("../lib/crudrouter");
 
+const mongoose = require('mongoose');
+const validator = require('../lib/validate');
 
-router.get('/', async(req, res) => {
-    try{
-        const employees = await Employee.find()
-        res.json(employees)
+const defaultFilter = (req, res, next) => {
+  //let { siteInfo } = res.locals;
+  res.locals.query = { 
+    
+    // siteId: "123",
+    // isActive: 1
+  };
+  //res.locals.defaultQuery = {...res.locals.query};
+  next();
+}
 
-    }catch(err){
-        res.send('Error ' + err)
+const defaultProjection = (req, res, next) => {
+  res.locals.projection = {};
+  next();
+}
+
+const defaultSort = (req, res, next) => {
+  res.locals.sort = {
+    order: "asc"
+  };
+
+  next(); 
+}
+
+const dynamicSort = (req, res, next) => {
+  let { sort = {} } = res.locals || {};
+  let sortKeys = Object.keys(sort);
+
+  let defalutSortBy = (sortKeys && sortKeys[0]) ? sortKeys[0] : "order";
+  let defalutSortOrder = (sortKeys && sortKeys[0]) ? sort[sortKeys[0]] : "asc";
+
+  let {
+    sortBy = defalutSortBy, order = defalutSortOrder
+  } = req.query || {};
+
+  let possibleOrderValues = {
+    asc: 1,
+    desc: -1
+  };
+
+  let possibleOrderFields = {
+    "id": "_id",
+    "name": "name",
+    "order": "order",
+    "createdAt": "createdAt",
+    "updatedAt": "updatedAt"
+  };
+
+  if(!Object.keys(possibleOrderValues).includes(order)) {
+    order = defalutSortOrder
+  }
+
+  if(!Object.keys(possibleOrderFields).includes(sortBy)) {
+    sortBy = defalutSortBy
+  }
+
+  res.locals.sort = {
+    [possibleOrderFields[sortBy]] : possibleOrderValues[order]
+  }
+
+  next();
+}
+
+const dynamicProjection = (req, res, next) => {
+  let { fieldSet = null } = req.query || {};
+
+  if(fieldSet) {
+    fieldSet = fieldSet.split(',');
+
+    res.locals.projection = fieldSet.reduce((a,b)=> (a[b] = 1,a),{});
+  }
+
+  next();
+
+}
+
+const dynamicSearchAndFilter = (req, res, next) => {
+  let values = {};
+  let { query = {} } = res.locals || {};
+
+  if(req.method == "POST") {
+    let{ search = undefined, filter = {} } = req.body || {};
+
+    if(search) values['search'] = search;
+
+    if(filter) {
+      if(filter.ids) {
+        values['ids'] = filter.ids
+      }
+      if (filter.hasOwnProperty("isActive") && typeof filter.isActive === "boolean") {
+        values['isActive'] = filter.isActive ? true : false
+      }
     }
-})
+  }
+  if(req.method == "GET") {
+    let{ search = undefined, ids = undefined } = req.query || {};
 
+    if(search) values['search'] = search;
+    if(ids) values['ids'] = ids.split(",");
+  }
 
+  let rules = {
+    "search": "sometimes|required|string|max:300",
+    "ids": "sometimes|required|array|min:1",
+    "ids.*": "required|mongo_object_id"
+  };
 
-router.get('/:id', async(req, res) => {
-    try{
-        const oneemployee = await Employee.findById(req.params.id)
-        res.json(oneemployee)
-
-    }catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Failed to get employee' });
+  validator(values, rules, {}, {}, (err, status) => {
+    if (!status) {
+      if(err && err.errors) {
+        let errorMessage = new Error(err.errors[Object.keys(err.errors)[0]][0]);
+        errorMessage.status = 400;
+        next(errorMessage);
+      } else {
+        next(err);  
       }
-})
-
-
-
-
-router.patch('/:id', async(req, res) => {
-    try{
-        const oneemployee = await Employee.findById(req.params.id)
-        oneemployee.id = req.body.id
-        const a1 = await oneemployee.save()
-        res.json(a1)
-
-    }catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Failed to update employee' });
+    } else {
+      if(values["search"]) {
+        query = Object.assign(query, {
+          $text: {
+            $search: values["search"]
+          }
+        });
       }
-})
-
-router.delete('/:id', async(req, res) => {
-    try{
-        const oneemployee = await Employee.findById(req.params.id)
-        oneemployee.id = req.body.id
-        const a1 = await oneemployee.deleteOne()
-        res.json(a1)
-
-    }catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Failed to delete employee' });
+    
+      if(values['ids']) {
+        query = Object.assign(query, {
+          "_id": {
+            "$in": values['ids']
+          }
+        })
       }
-})
-
-
-
-
-router.post('/', async(req, res) => {
-    try {
-        const { name, id } = req.body;
-        const employee = new Employee({ name, id });
-        await employee.save();
-        res.status(201).json({ message: 'Employee created successfully' });
-      } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Failed to create employee' });
+      if (values.hasOwnProperty("isActive")) {
+        query.isActive = values.isActive
       }
-})
-module.exports = router
+
+      next();
+    }
+  });
+}
+  
+const formatRules = (req, res, next) => {
+  res.locals.rules = {
+    "name": "required|string|max:300",
+    "isActive": "required|boolean"
+  };
+
+  if(req.method.toLowerCase() === 'patch') {
+    Object.keys(res.locals.rules).forEach(x => { 
+      if(x.indexOf("*") === -1 && res.locals.rules[x].indexOf("required") !== -1) {
+        res.locals.rules[x] = "sometimes|" + res.locals.rules[x];
+      } 
+    })
+  }
+  
+  next();
+}
+
+const validateRequest = (req, res, next) => {
+  let { body: data } = req || {};
+  let { rules = {}, customMessage = {} } = res.locals || {};
+
+  validator(data, rules, customMessage, {}, (err, status) => {
+    if (!status) {
+      if(err && err.errors) {
+        let errorMessage = new Error(err.errors[Object.keys(err.errors)[0]][0]);
+        errorMessage.status = 400;
+        next(errorMessage);
+      } else {
+        next(err);  
+      }
+    } else {
+      res.locals.validatedData = data;
+      next();
+    }
+  });
+}
+
+const formatAgencyType = (req, res, next) => {
+  let { validatedData } = res.locals || {};
+  let { 
+    name = undefined,
+    id = undefined
+  } = validatedData || {};
+
+  let { siteInfo } = res.locals;
+
+  res.locals.data = {
+    name,
+    id
+  };
+
+  next();
+}
+
+const validations = {
+  "create": [
+    formatRules,
+    validateRequest,
+    formatAgencyType
+  ],
+  "list": [
+    defaultFilter,
+    defaultProjection,
+    dynamicProjection,
+    defaultSort,
+    dynamicSort,
+    dynamicSearchAndFilter
+  ],
+  "read": [
+    defaultFilter,
+    // defaultProjection,
+    // dynamicProjection
+  ],
+  "update": [
+    defaultFilter,
+    formatRules,
+    validateRequest,
+    formatAgencyType
+  ],
+  "delete": [
+    defaultFilter
+  ],
+}
+
+const crudRouter = new CrudRouter(Employee, validations, 'Employee Type');
+module.exports = [crudRouter.router];
