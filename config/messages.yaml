@@ -1,0 +1,8 @@
+success: 
+ recordCreated:
+  status:'success'
+error:
+  unAuthorized:
+    code: 11007
+    api-message: 'Unauthorized Error'
+    message: 'Unauthorized Error'

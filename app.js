@@ -1,8 +1,8 @@
 const express = require('express')
 const mongoose = require('mongoose')
+// const { MongoClient } = require('mongodb');
 const app = express()
 app.use(express.json())
-
 const employeeRouter = require('./routes/route')
 
 mongoose.connect('mongodb://localhost:27017/employee');
@@ -14,11 +14,10 @@ con.on('open', function(){
 app.get('/',function(req,res,next){
     return res.status(200).send({result:'Success'})
 })
-
 app.use('/employee', employeeRouter)
 
+app.listen(9004);
 
-app.listen(9003);
 
 
 

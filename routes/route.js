@@ -1,13 +1,13 @@
-const { Employee } = require("../models/employeeType");
+const Employee = require("../models/employeeType");
 const CrudRouter = require("../lib/crudrouter");
 
 const mongoose = require('mongoose');
 const validator = require('../lib/validate');
 
+
 const defaultFilter = (req, res, next) => {
   //let { siteInfo } = res.locals;
   res.locals.query = { 
-    
     // siteId: "123",
     // isActive: 1
   };
@@ -15,10 +15,12 @@ const defaultFilter = (req, res, next) => {
   next();
 }
 
+
 const defaultProjection = (req, res, next) => {
   res.locals.projection = {};
   next();
 }
+
 
 const defaultSort = (req, res, next) => {
   res.locals.sort = {
@@ -27,6 +29,7 @@ const defaultSort = (req, res, next) => {
 
   next(); 
 }
+
 
 const dynamicSort = (req, res, next) => {
   let { sort = {} } = res.locals || {};
@@ -63,7 +66,6 @@ const dynamicSort = (req, res, next) => {
   res.locals.sort = {
     [possibleOrderFields[sortBy]] : possibleOrderValues[order]
   }
-
   next();
 }
 
@@ -72,13 +74,12 @@ const dynamicProjection = (req, res, next) => {
 
   if(fieldSet) {
     fieldSet = fieldSet.split(',');
-
     res.locals.projection = fieldSet.reduce((a,b)=> (a[b] = 1,a),{});
   }
-
   next();
 
 }
+
 
 const dynamicSearchAndFilter = (req, res, next) => {
   let values = {};
@@ -139,26 +140,25 @@ const dynamicSearchAndFilter = (req, res, next) => {
       if (values.hasOwnProperty("isActive")) {
         query.isActive = values.isActive
       }
-
       next();
     }
   });
 }
-  
+
+
+
 const formatRules = (req, res, next) => {
   res.locals.rules = {
-    "name": "required|string|max:300",
-    "isActive": "required|boolean"
+    "name": "required|string|max:300"
   };
 
   if(req.method.toLowerCase() === 'patch') {
     Object.keys(res.locals.rules).forEach(x => { 
       if(x.indexOf("*") === -1 && res.locals.rules[x].indexOf("required") !== -1) {
-        res.locals.rules[x] = "sometimes|" + res.locals.rules[x];
+        res.locals.rules[x] = "sometimes" + res.locals.rules[x];
       } 
     })
   }
-  
   next();
 }
 
@@ -199,6 +199,7 @@ const formatAgencyType = (req, res, next) => {
   next();
 }
 
+
 const validations = {
   "create": [
     formatRules,
@@ -215,8 +216,8 @@ const validations = {
   ],
   "read": [
     defaultFilter,
-    // defaultProjection,
-    // dynamicProjection
+    defaultProjection,
+    dynamicProjection
   ],
   "update": [
     defaultFilter,
@@ -229,5 +230,7 @@ const validations = {
   ],
 }
 
+
 const crudRouter = new CrudRouter(Employee, validations, 'Employee Type');
 module.exports = [crudRouter.router];
+
