@@ -16,6 +16,7 @@
     "fs": "^0.0.1-security",
     "js-yaml": "^4.1.0",
     "mongoose": "^5.13.22",
+    "nodemailer": "^6.9.13",
     "nodemon": "^3.1.0",
     "regex-escape": "^3.4.10",
     "validatorjs": "^3.22.1"

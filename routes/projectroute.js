@@ -1,6 +1,6 @@
-const Employee = require("../models/employeeType");
-const Project = require("../models/project")
-const CrudRouter = require("../lib/crudrouter");
+// const Employee = require("../models/employeeType");
+const Project = require('../models/project')
+const CrudRouter = require('../lib/crudrouter')
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 const validator = require('../lib/validate');
@@ -16,21 +16,17 @@ const defaultFilter = (req, res, next) => {
   next();
 }
 
-
 const defaultProjection = (req, res, next) => {
   res.locals.projection = {};
   next();
 }
 
-
 const defaultSort = (req, res, next) => {
   res.locals.sort = {
     order: "asc"
   };
-
   next(); 
 }
-
 
 const dynamicSort = (req, res, next) => {
   let { sort = {} } = res.locals || {};
@@ -70,7 +66,6 @@ const dynamicSort = (req, res, next) => {
   next();
 }
 
-
 const dynamicProjection = (req, res, next) => {
   let { fieldSet = null } = req.query || {};
   if(fieldSet) {
@@ -79,7 +74,6 @@ const dynamicProjection = (req, res, next) => {
   }
   next();
 }
-
 
 const dynamicSearchAndFilter = (req, res, next) => {
   let values = {};
@@ -145,7 +139,6 @@ const dynamicSearchAndFilter = (req, res, next) => {
   });
 }
 
-
 const sendingMail = (req,res,next) => {
   let transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -172,7 +165,6 @@ transporter.sendMail(mailOptions, (error, info) => {
 });
 next();
 }
-
 
 const sendingUpdateMail = (req,res,next) => {
   let transporter = nodemailer.createTransport({
@@ -201,7 +193,6 @@ transporter.sendMail(mailOptions, (error, info) => {
 next();
 }
 
-
 const formatRules = (req, res, next) => {
   res.locals.rules = {
     "name": "required|string|max:300"
@@ -215,7 +206,6 @@ const formatRules = (req, res, next) => {
   }
   next();
 }
-
 
 const validateRequest = (req, res, next) => {
   let { body: data } = req || {};
@@ -241,57 +231,56 @@ const formatAgencyType = (req, res, next) => {
   let { validatedData } = res.locals || {};
   let { 
     name = undefined,
-    id = undefined,
-    email
+    id = undefined
   } = validatedData || {};
   let { siteInfo } = res.locals;
   res.locals.data = {
     name,
-    id,
-    email
+    id
   };
   next();
 }
 
 const validations = {
   "create": [
-    formatRules,
-    validateRequest,
-    formatAgencyType,
+    // formatRules,
+    // validateRequest,
+    // formatAgencyType,
   ],
   "postCreate":[
-    sendingMail
+    // sendingMail
   ],
   "list": [
-    defaultFilter,
-    defaultProjection,
-    dynamicProjection,
-    defaultSort,
-    dynamicSort,
-    dynamicSearchAndFilter
+    // defaultFilter,
+    // defaultProjection,
+    // dynamicProjection,
+    // defaultSort,
+    // dynamicSort,
+    // dynamicSearchAndFilter
   ],
   "read": [
-    defaultFilter,
-    defaultProjection,
-    dynamicProjection
+    // defaultFilter,
+    // defaultProjection,
+    // dynamicProjection
   ],
   "update": [
-    defaultFilter,
-    formatRules,
-    validateRequest,
-    formatAgencyType
+    // defaultFilter,
+    // formatRules,
+    // validateRequest,
+    // formatAgencyType
   ],
-
-  "postUpdate":[sendingUpdateMail],
+  "postUpdate":[
+    // sendingUpdateMail
+  ],
 
   "delete": [
-    defaultFilter
+    // defaultFilter
   ],
 }
+     
 
-
-const crudRouter = new CrudRouter(Employee, validations, 'Employee Type');
-// const cs = new CrudRouter(Project, validations, 'Project Type');
-module.exports = [crudRouter.router];
-// module.exports = [cs.router];
+// const crudRouter = new CrudRouter(Employee, validations, 'Employee Type');
+const cs = new CrudRouter(Project, validations, 'Project Type');
+// module.exports = [crudRouter.router];
+module.exports = [cs.router];
 
