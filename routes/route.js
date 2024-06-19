@@ -16,7 +16,6 @@ const defaultFilter = (req, res, next) => {
   next();
 }
 
-
 const defaultProjection = (req, res, next) => {
   res.locals.projection = {};
   next();
@@ -182,7 +181,7 @@ const sendingUpdateMail = (req,res,next) => {
         pass: 'bmct egzh pqca jzsp'
     }
 });
- console.log(res.locals);
+//  console.log(res.locals);
  let {record} = res.locals;
 
 let mailOptions = {
@@ -206,15 +205,16 @@ const formatRules = (req, res, next) => {
   res.locals.rules = {
     "name": "required|string|max:300"
   };
-  if(req.method.toLowerCase() === 'patch') {
-    Object.keys(res.locals.rules).forEach(x => { 
-      if(x.indexOf("*") === -1 && res.locals.rules[x].indexOf("required") !== -1) {
-        res.locals.rules[x] = "sometimes" + res.locals.rules[x];
-      } 
-    })
-  }
+  // if(req.method.toLowerCase() === 'patch') {
+  //   Object.keys(res.locals.rules).forEach(x => { 
+  //     if(x.indexOf("*") === -1 && res.locals.rules[x].indexOf("required") !== -1) {
+  //       res.locals.rules[x] = "sometimes" + res.locals.rules[x];
+  //     } 
+  //   })
+  // }
   next();
 }
+
 
 
 const validateRequest = (req, res, next) => {
@@ -236,6 +236,7 @@ const validateRequest = (req, res, next) => {
     }
   });
 }
+
 
 const formatAgencyType = (req, res, next) => {
   let { validatedData } = res.locals || {};

@@ -4,6 +4,9 @@ const CrudRouter = require('../lib/crudrouter')
 const nodemailer = require('nodemailer');
 const mongoose = require('mongoose');
 const validator = require('../lib/validate');
+const Employee = require('../models/employeeType');
+const jwt = require('jsonwebtoken');
+const secret = 'hjcvdjhucygdcbkjcbkjacb465d4c465465464sdsd5464';
 
 
 const defaultFilter = (req, res, next) => {
@@ -16,10 +19,12 @@ const defaultFilter = (req, res, next) => {
   next();
 }
 
+
 const defaultProjection = (req, res, next) => {
   res.locals.projection = {};
   next();
 }
+
 
 const defaultSort = (req, res, next) => {
   res.locals.sort = {
@@ -27,6 +32,7 @@ const defaultSort = (req, res, next) => {
   };
   next(); 
 }
+
 
 const dynamicSort = (req, res, next) => {
   let { sort = {} } = res.locals || {};
@@ -66,6 +72,8 @@ const dynamicSort = (req, res, next) => {
   next();
 }
 
+
+
 const dynamicProjection = (req, res, next) => {
   let { fieldSet = null } = req.query || {};
   if(fieldSet) {
@@ -74,6 +82,7 @@ const dynamicProjection = (req, res, next) => {
   }
   next();
 }
+
 
 const dynamicSearchAndFilter = (req, res, next) => {
   let values = {};
@@ -139,6 +148,7 @@ const dynamicSearchAndFilter = (req, res, next) => {
   });
 }
 
+
 const sendingMail = (req,res,next) => {
   let transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -149,6 +159,7 @@ const sendingMail = (req,res,next) => {
 });
 //  console.log(res.locals);
  let {data} = res.locals;
+
 
 let mailOptions = {
     from: 'yaswanth35000@gmail.com',
@@ -165,6 +176,7 @@ transporter.sendMail(mailOptions, (error, info) => {
 });
 next();
 }
+
 
 const sendingUpdateMail = (req,res,next) => {
   let transporter = nodemailer.createTransport({
@@ -193,9 +205,12 @@ transporter.sendMail(mailOptions, (error, info) => {
 next();
 }
 
+
 const formatRules = (req, res, next) => {
   res.locals.rules = {
+    // "name": "required|string|max:300",
     "name": "required|string|max:300"
+    
   };
   if(req.method.toLowerCase() === 'patch') {
     Object.keys(res.locals.rules).forEach(x => { 
@@ -207,11 +222,35 @@ const formatRules = (req, res, next) => {
   next();
 }
 
+
+async function createProjectWithEmployee(req, res, next) {
+  try {
+    const { id, name, employeeID } = req.body;
+    // Find the employee by ID
+    const employee = await Employee.findById(employeeID);
+    if (!employee) {
+      return res.status(404).send({ error: 'Employee not found' });
+    }
+
+    // Create the project and associate it with the employee
+    // const project = new Project({ id, name, employee: employee._id });
+    // // console.log(employee);
+    // await project.save();
+
+    // res.status(201).send(project);
+  } catch (error) {
+    res.status(400).send({ error: error.message });
+  }
+next();
+}
+
+
 const validateRequest = (req, res, next) => {
   let { body: data } = req || {};
   let { rules = {}, customMessage = {} } = res.locals || {};
 
   validator(data, rules, customMessage, {}, (err, status) => {
+
     if (!status) {
       if(err && err.errors) {
         let errorMessage = new Error(err.errors[Object.keys(err.errors)[0]][0]);
@@ -227,54 +266,111 @@ const validateRequest = (req, res, next) => {
   });
 }
 
+
+const checkAuthenticated = (req, res, next) => {
+
+  const payload = {
+    name: 'Yash',
+    employeeID: '666827c193bef5392e079475'
+};
+
+var token = jwt.sign(payload, secret);
+// console.log(token);
+
+
+  const authHeader = req.headers['authorization'];
+    var token = authHeader.split(' ')[1];
+    if (token == null) return res.sendStatus(401);
+
+    jwt.verify(token, secret, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+}
+
+
+
+const authorizeEditProject = async (req, res, next) => {
+  const projectId = req.params.id;
+    const employeeId = req.user.employeeID;
+    try {
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).send('Project not found');
+        }
+        const aaa = project.employeeID 
+        const b = JSON.stringify(aaa);
+        const trimmedString = b.slice(1, -1);
+        if (trimmedString !== employeeId) {
+            return res.status(403).send('You are not authorized to edit this project');
+        }
+        next();
+    } catch (error) {
+        res.status(500).send('Server error');
+    }
+}
+
+
 const formatAgencyType = (req, res, next) => {
   let { validatedData } = res.locals || {};
   let { 
     name = undefined,
-    id = undefined
+    id = undefined,
+    employeeID
   } = validatedData || {};
   let { siteInfo } = res.locals;
   res.locals.data = {
     name,
-    id
+    id,
+    employeeID
   };
   next();
 }
 
+
 const validations = {
   "create": [
-    // formatRules,
-    // validateRequest,
-    // formatAgencyType,
+    formatRules,
+    validateRequest,
+    formatAgencyType,
+    createProjectWithEmployee
   ],
+
   "postCreate":[
     // sendingMail
   ],
+
   "list": [
-    // defaultFilter,
-    // defaultProjection,
-    // dynamicProjection,
-    // defaultSort,
-    // dynamicSort,
-    // dynamicSearchAndFilter
+    defaultFilter,
+    defaultProjection,
+    dynamicProjection,
+    defaultSort,
+    dynamicSort,
+    dynamicSearchAndFilter
   ],
+
   "read": [
-    // defaultFilter,
-    // defaultProjection,
-    // dynamicProjection
+    defaultFilter,
+    defaultProjection,
+    dynamicProjection
   ],
+
   "update": [
-    // defaultFilter,
-    // formatRules,
-    // validateRequest,
-    // formatAgencyType
+    checkAuthenticated,
+    defaultFilter,
+    authorizeEditProject,
+    formatRules,
+    validateRequest,
+    formatAgencyType
   ],
+
   "postUpdate":[
     // sendingUpdateMail
   ],
 
   "delete": [
-    // defaultFilter
+    defaultFilter
   ],
 }
      
