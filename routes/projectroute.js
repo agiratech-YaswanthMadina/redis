@@ -6,8 +6,10 @@ const mongoose = require('mongoose');
 const validator = require('../lib/validate');
 const Employee = require('../models/employeeType');
 const jwt = require('jsonwebtoken');
-const secret = 'hjcvdjhucygdcbkjcbkjacb465d4c465465464sdsd5464';
 
+require('dotenv').config();
+
+const secret = process.env.SECRET_KEY;
 
 const defaultFilter = (req, res, next) => {
   //let { siteInfo } = res.locals;
