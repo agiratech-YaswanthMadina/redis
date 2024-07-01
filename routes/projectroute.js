@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 require("dotenv").config();
 
+
 const defaultFilter = (req, res, next) => {
   //let { siteInfo } = res.locals;
   res.locals.query = {
@@ -63,19 +64,6 @@ const dynamicSort = (req, res, next) => {
   };
   next();
 };
-
-// const checkValidUser = async (req, res, next) => {
-//   try {
-//     const exist = await user.findOne({ email: email });
-
-//     if (exist) {
-//       next();
-//     }
-//   } catch (error) {
-//     console.error("Error checking email:", error);
-//     return res.status(500).json({ error: "Internal Server Error" });
-//   }
-// };
 
 const dynamicProjection = (req, res, next) => {
   let { fieldSet = null } = req.query || {};
@@ -299,12 +287,13 @@ const authorizeEditProject = async (req, res, next) => {
 
 const formatAgencyType = (req, res, next) => {
   let { validatedData } = res.locals || {};
-  let { name = undefined, id = undefined, employeeID } = validatedData || {};
+  let { name = undefined, id = undefined, employeeID, googleId } = validatedData || {};
   let { siteInfo } = res.locals;
   res.locals.data = {
     name,
     id,
     employeeID,
+    googleId
   };
   next();
 };

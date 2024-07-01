@@ -10,11 +10,10 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  id: {
+  googleId: {
     type: Number,
     required: true,
   },
-  // Add other fields as needed
 });
 
 
