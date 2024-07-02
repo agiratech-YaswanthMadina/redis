@@ -292,8 +292,7 @@ const formatAgencyType = (req, res, next) => {
   res.locals.data = {
     name,
     id,
-    employeeID,
-    googleId
+    employeeID
   };
   next();
 };

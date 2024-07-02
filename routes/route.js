@@ -3,6 +3,8 @@ const Project = require("../models/project");
 const CrudRouter = require("../lib/crudrouter");
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
+const User = require("../models/user");
+
 const validator = require("../lib/validate");
 
 const defaultFilter = (req, res, next) => {
@@ -230,19 +232,20 @@ const validateRequest = (req, res, next) => {
 
 const formatAgencyType = (req, res, next) => {
   let { validatedData } = res.locals || {};
-  let { name = undefined, id = undefined, email } = validatedData || {};
+  let { name = undefined, id = undefined, email, googleId } = validatedData || {};
   let { siteInfo } = res.locals;
   res.locals.data = {
     name,
     id,
     email,
+    googleId
   };
   next();
 };
 
 const validations = {
   create: [formatRules, validateRequest, formatAgencyType],
-  postCreate: [sendingMail],
+  // postCreate: [sendingMail],
   list: [
     defaultFilter,
     defaultProjection,

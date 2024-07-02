@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const User = require("../models/user");
-const Project = require('../models/project')
+const Employee = require('../models/employeeType')
+const generateToken = require('../utils/jwt');
 
 function isLoggedIn(req, res, next) {
   req.user ? next() : res.sendStatus(401);
@@ -37,7 +38,6 @@ router.get(
   }),
   async (req, res) => {
     try {
-      // Adding user to the database
       // console.log(req.user);
       let user = await User.findOne({ email: req.user.email });
 
@@ -58,13 +58,11 @@ router.get(
 );
 
 router.get("/protected", isLoggedIn, async (req, res) => {
-  // res.send(`Hello ${req.user.displayName}`);
-  try {
-    const projects = await Project.find();
-    res.json(projects);
-  } catch (err) {
-    res.status(500).send('Error retrieving project data');
-  }
+  const token = generateToken(req.user);
+  const email = req.user.email;
+  const employees = await Employee.find({ email });
+  res.json({ token, employees }); 
+  
 });
 
 router.get("/logout", (req, res) => {
