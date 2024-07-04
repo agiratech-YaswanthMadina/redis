@@ -78,7 +78,6 @@ router.get(
 
 router.get("/protected", isLoggedIn, async (req, res) => {
   const token = generateToken(req.user);
-  // const decoded = jwt.verify(token, process.env.SECRET_KEY);
   const email = req.user.email;
   const employees = await Employee.find({ email: email });
   res.json({ token, employees });

@@ -254,7 +254,9 @@ const validations = {
     dynamicSort,
     dynamicSearchAndFilter,
   ],
+  
   read: [defaultFilter, defaultProjection, dynamicProjection],
+
   update: [defaultFilter, formatRules, validateRequest, formatAgencyType],
 
   postUpdate: [sendingUpdateMail],

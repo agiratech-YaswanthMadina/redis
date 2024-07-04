@@ -299,6 +299,7 @@ const formatAgencyType = (req, res, next) => {
 
 const validations = {
   create: [formatRules, validateRequest, formatAgencyType],
+  
   postCreate: [
     // sendingMail
   ],
