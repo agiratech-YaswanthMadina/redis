@@ -6,10 +6,24 @@ const Employee = require("../models/employeeType");
 const generateToken = require("../utils/jwt");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
+// const redis = require("redis");
+// const redisClient = redis.createClient();
+// const con = require('../app')
+// const getData = require('../app'); 
+// const { MongoClient } = require('mongodb');
+// const mongoClient = new MongoClient("mongodb://localhost:27017/employee");
+// const db = await con.db("employee");
+
+// // const collection = con.collection("employeemodels");
+// const db = mongoClient.db('yourDatabaseName');
+// const collection = db.collection('yourCollectionName');
+
+
+
 
 function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1]; 
+  const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
     return res.status(401).send("Unauthorized request");
@@ -17,8 +31,8 @@ function verifyToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
-    req.user = decoded; 
-    next(); 
+    req.user = decoded;
+    next();
   } catch (err) {
     return res.status(401).send("Invalid token");
   }
@@ -37,6 +51,7 @@ router.use(
 );
 
 router.use(passport.initialize());
+
 router.use(passport.session());
 
 router.get("/", (req, res) => {
@@ -88,11 +103,24 @@ router.get("/logout", (req, res) => {
   res.send("Goodbye!");
 });
 
-router.get("/data", verifyToken, async (req, res) => {
-  const email = req.user.email;
-  const employees = await Employee.find({ email: email });
-  res.json(employees);
-});
+// router.get("/data", verifyToken, async (req, res) => {
+//   const email = req.user.email;
+//   const employees = await Employee.find({ email: email });
+//   res.json(employees);
+//   // const key = req.query.key; // Assume the key is passed as a query parameter
+
+//   // if (!key) {
+//   //   return res.status(400).send("Key is required");
+//   // }
+
+//   // try {
+//   //   const data = await getData(key);
+//   //   res.json(data);
+//   // } catch (error) {
+//   //   console.error("Error fetching data:", error);
+//   //   res.status(500).send("Internal Server Error");
+//   // }
+// });
 
 router.get("/auth/google/failure", (req, res) => {
   res.send("Failed to authenticate..");

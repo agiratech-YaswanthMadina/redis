@@ -6,7 +6,6 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 require("dotenv").config();
 
-
 const defaultFilter = (req, res, next) => {
   //let { siteInfo } = res.locals;
   res.locals.query = {
@@ -287,19 +286,24 @@ const authorizeEditProject = async (req, res, next) => {
 
 const formatAgencyType = (req, res, next) => {
   let { validatedData } = res.locals || {};
-  let { name = undefined, id = undefined, employeeID, googleId } = validatedData || {};
+  let {
+    name = undefined,
+    id = undefined,
+    employeeID,
+    googleId,
+  } = validatedData || {};
   let { siteInfo } = res.locals;
   res.locals.data = {
     name,
     id,
-    employeeID
+    employeeID,
   };
   next();
 };
 
 const validations = {
   create: [formatRules, validateRequest, formatAgencyType],
-  
+
   postCreate: [
     // sendingMail
   ],

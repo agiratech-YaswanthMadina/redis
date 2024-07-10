@@ -26,7 +26,6 @@ const defaultSort = (req, res, next) => {
   res.locals.sort = {
     order: "asc",
   };
-
   next();
 };
 
@@ -232,13 +231,18 @@ const validateRequest = (req, res, next) => {
 
 const formatAgencyType = (req, res, next) => {
   let { validatedData } = res.locals || {};
-  let { name = undefined, id = undefined, email, googleId } = validatedData || {};
+  let {
+    name = undefined,
+    id = undefined,
+    email,
+    googleId,
+  } = validatedData || {};
   let { siteInfo } = res.locals;
   res.locals.data = {
     name,
     id,
     email,
-    googleId
+    googleId,
   };
   next();
 };
@@ -254,14 +258,14 @@ const validations = {
     dynamicSort,
     dynamicSearchAndFilter,
   ],
-  
+
   read: [defaultFilter, defaultProjection, dynamicProjection],
 
   update: [defaultFilter, formatRules, validateRequest, formatAgencyType],
 
   postUpdate: [sendingUpdateMail],
 
-  delete: [defaultFilter],  
+  delete: [defaultFilter],
 };
 
 const crudRouter = new CrudRouter(Employee, validations, "Employee Type");

@@ -28,6 +28,7 @@
     "passport-google-oidc": "^0.1.0",
     "passport-local": "^1.0.0",
     "path": "^0.12.7",
+    "redis": "^4.6.15",
     "regex-escape": "^3.4.10",
     "validatorjs": "^3.22.1"
   }
