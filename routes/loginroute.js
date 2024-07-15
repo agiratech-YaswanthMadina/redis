@@ -18,9 +18,6 @@ const jwt = require("jsonwebtoken");
 // const db = mongoClient.db('yourDatabaseName');
 // const collection = db.collection('yourCollectionName');
 
-
-
-
 function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
