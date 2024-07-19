@@ -2,11 +2,17 @@ const Employee = require("../models/employeeType");
 const Project = require("../models/project");
 const CrudRouter = require("../lib/crudrouter");
 const nodemailer = require("nodemailer");
-const mongoose = require("mongoose");
+// const mongoose = require("mongoose");
 const User = require("../models/user");
+const redis = require("redis");
+const redisClient = redis.createClient();
+const mongoose = require("mongoose");
 
+redisClient.on("error", (err) => {
+  console.error("Redis client error:", err);
+});
+redisClient.connect().catch(console.error);
 const validator = require("../lib/validate");
-
 const defaultFilter = (req, res, next) => {
   //let { siteInfo } = res.locals;
   res.locals.query = {
@@ -16,6 +22,128 @@ const defaultFilter = (req, res, next) => {
   //res.locals.defaultQuery = {...res.locals.query};
   next();
 };
+
+
+//For Post End Point
+const checkRedisPost = async (req, res, next) => {
+  // let unique = req.params.id;
+  let { id } = req.body;
+  id = String(id);
+  let checkData = await redisClient.get(id);
+  const parsedData = JSON.parse(checkData);
+  if (!!!checkData || parsedData.data === null) {
+    next();
+  } else {
+    return res.send(JSON.parse(checkData));
+  }
+};
+const setPostRedisCache = async (req, res, next) => {
+  let { record } = res.locals;
+  let { id } = req.body;
+  id = String(id);
+  const currentTime = new Date().getTime();
+  const dataToCache = {
+    data: record,
+    timestamp: currentTime,
+    expiryTime: 60000,
+  };
+  redisClient.setEx(id, 60, JSON.stringify(dataToCache));
+  next();
+};
+
+
+//For Update End Point
+const checkRedisUpdate = async (req, res, next) => {
+  let unique = req.params.id;
+  let checkData = await redisClient.get(unique);
+  const parsedData = JSON.parse(checkData);
+  if (!!!checkData || parsedData.data === null) {
+    next();
+  } else {
+    return res.send(JSON.parse(checkData));
+  }
+};
+const setRedisCacheUpdate = async (req, res, next) => {
+  let unique = req.params.id;
+  let { record } = res.locals;
+  async function refreshCache(unique) {
+    const currentTime = new Date().getTime();
+    const dataToCache = {
+      data: record,
+      timestamp: currentTime,
+      expiryTime: 60000,
+    };
+    try {
+      // Start a transaction
+      const pipeline = redis.pipeline();
+      // Delete the old cache value
+      pipeline.del(unique);
+      // Set the new data in Redis cache
+      pipeline.set(unique, JSON.stringify(dataToCache));
+      // Execute the transaction
+      await pipeline.exec();
+    } catch (err) {
+      console.error("Error refreshing cache:", err);
+    }
+  }
+  await refreshCache(unique);
+  next();
+};
+
+
+//For Delete End Point
+const checkRedisForDelete = async (req,res,next) => {
+  let unique = req.params.id;
+  let checkData = await redisClient.get(unique);
+  const parsedData = JSON.parse(checkData);
+  let {record} = res.locals;
+  if (!!!checkData || !(checkData==null)) {
+    next();
+  } else {
+    return res.send("No Data");
+  }
+}
+const setRedisCacheForDelete = async(req,res,next) => {
+  let unique = req.params.id;
+  let { record } = res.locals;
+  const currentTime = new Date().getTime();
+  const dataToCache = {
+    data: record,
+    timestamp: currentTime,
+    expiryTime: 60000,
+  };
+  redisClient.setEx(unique, 60, JSON.stringify(dataToCache));
+  await redisClient.del(unique);
+  next();
+}
+
+
+//For Get by ID End Point
+const checkRedis = async (req, res, next) => {
+  // const a = new Promise(async (resolve, reject) => {
+  let unique = req.params.id;
+  let checkData = await redisClient.get(unique);
+  const parsedData = JSON.parse(checkData);
+  if (!!!checkData || parsedData.data === null) {
+    next();
+  } else {
+    return res.send(JSON.parse(checkData));
+  }
+};
+const setRedisCache = (req, res, next) => {
+  let { record } = res.locals;
+  let unique = req.params.id;
+  const currentTime = new Date().getTime();
+  const dataToCache = {
+    data: record,
+    timestamp: currentTime,
+    expiryTime: 60000,
+  };
+  redisClient.setEx(unique, 60, JSON.stringify(dataToCache));
+  next();
+};
+
+
 
 const defaultProjection = (req, res, next) => {
   res.locals.projection = {};
@@ -228,7 +356,7 @@ const validateRequest = (req, res, next) => {
     }
   });
 };
-
+ 
 const formatAgencyType = (req, res, next) => {
   let { validatedData } = res.locals || {};
   let {
@@ -248,8 +376,10 @@ const formatAgencyType = (req, res, next) => {
 };
 
 const validations = {
-  create: [formatRules, validateRequest, formatAgencyType],
-  // postCreate: [sendingMail],
+  create: [formatRules, validateRequest, formatAgencyType, checkRedisPost],
+  
+  postCreate: [setPostRedisCache],
+
   list: [
     defaultFilter,
     defaultProjection,
@@ -259,13 +389,23 @@ const validations = {
     dynamicSearchAndFilter,
   ],
 
-  read: [defaultFilter, defaultProjection, dynamicProjection],
+  read: [defaultFilter, defaultProjection, dynamicProjection, checkRedis],
 
-  update: [defaultFilter, formatRules, validateRequest, formatAgencyType],
+  postRead: [setRedisCache],
 
-  postUpdate: [sendingUpdateMail],
+  update: [
+    defaultFilter,
+    formatRules,
+    validateRequest,
+    formatAgencyType,
+    checkRedisUpdate,
+  ],
 
-  delete: [defaultFilter],
+  postUpdate: [sendingUpdateMail, setRedisCacheUpdate],
+
+  delete: [defaultFilter, checkRedisForDelete],
+
+  postDelete:[setRedisCacheForDelete]
 };
 
 const crudRouter = new CrudRouter(Employee, validations, "Employee Type");

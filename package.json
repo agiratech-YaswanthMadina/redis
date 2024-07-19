@@ -16,6 +16,7 @@
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "fs": "^0.0.1-security",
+    "ioredis": "^5.4.1",
     "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "jws": "^4.0.0",

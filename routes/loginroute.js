@@ -13,7 +13,6 @@ const jwt = require("jsonwebtoken");
 // const { MongoClient } = require('mongodb');
 // const mongoClient = new MongoClient("mongodb://localhost:27017/employee");
 // const db = await con.db("employee");
-
 // // const collection = con.collection("employeemodels");
 // const db = mongoClient.db('yourDatabaseName');
 // const collection = db.collection('yourCollectionName');
